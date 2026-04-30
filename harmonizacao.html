@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bendita Taça — Harmonização</title>
+<meta property="og:title" content="Bendita Taça — Qual vinho combina com o seu momento?"/>
+<meta property="og:description" content="Descubra a uva ideal para o seu momento em 5 perguntas."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%;background:#1a0f0a}
+  body{font-family:'Jost',sans-serif;font-weight:300;color:#f0e8e0;display:flex;justify-content:center;padding:2rem 1rem 4rem}
+  .container{width:100%;max-width:480px}
+
+  /* grain overlay */
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+  .logo{font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.22em;color:#c9908070;text-transform:uppercase;text-align:center;padding-top:1.75rem;margin-bottom:2rem;position:relative;z-index:1}
+
+  .progress-bar{display:flex;gap:5px;margin-bottom:2rem;position:relative;z-index:1}
+  .pd{height:1px;flex:1;background:#3a2018;border-radius:1px;transition:background .6s}
+  .pd.done{background:#c47a50}
+
+  .screen{display:none;animation:fadeIn .5s ease;position:relative;z-index:1}
+  .screen.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  .divider{width:32px;height:1px;background:#c47a50;margin:0 auto 1.5rem;opacity:.4}
+
+  /* INTRO */
+  .intro-screen{text-align:center;padding-top:1rem}
+  .big-icon{font-size:48px;display:block;margin-bottom:1.25rem}
+  .intro-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-style:italic;color:#f0e8e0;margin-bottom:.6rem;line-height:1.3}
+  .intro-sub{font-size:14px;color:#9a7060;line-height:1.7;margin-bottom:2rem}
+
+  /* QUIZ */
+  .ql{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#c47a50;margin-bottom:.75rem;opacity:.8}
+  .qt{font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.4;color:#f0e8e0;margin-bottom:1.75rem;font-weight:400}
+
+  /* categoria */
+  .cat-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c47a5080;margin:1.25rem 0 .5rem;padding-left:2px}
+  .cat-label:first-child{margin-top:0}
+
+  .opts{display:flex;flex-direction:column;gap:8px}
+  .ob{background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:10px;padding:13px 16px;text-align:left;font-family:'Jost',sans-serif;font-weight:300;font-size:14px;color:#c8b8a8;cursor:pointer;transition:all .2s;line-height:1.4;width:100%}
+  .ob:hover{border-color:#c47a50;background:rgba(196,122,80,.06);color:#f0e8e0}
+  .ob.selected{border-color:#c47a50;background:rgba(196,122,80,.1);color:#f0e8e0}
+
+  /* BUTTONS */
+  .btn-primary{width:100%;padding:15px;background:#7B4A2D;border:none;border-radius:10px;color:#f0e8e0;font-family:'Jost',sans-serif;font-weight:400;font-size:14px;letter-spacing:.12em;cursor:pointer;transition:background .2s;margin-top:1.5rem}
+  .btn-primary:hover{background:#9a5c38}
+  .btn-primary:disabled{opacity:.3;pointer-events:none}
+  .btn-secondary{width:100%;padding:12px;background:none;border:1px solid #3a2018;border-radius:10px;color:#9a7060;font-family:'Jost',sans-serif;font-size:13px;cursor:pointer;margin-top:.75rem;transition:all .2s}
+  .btn-secondary:hover{border-color:#c47a50;color:#c47a50}
+
+  /* LEAD */
+  .lead-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-style:italic;color:#f0e8e0;margin-bottom:.5rem;line-height:1.4}
+  .lead-sub{font-size:13px;color:#9a7060;line-height:1.7;margin-bottom:1.5rem}
+  .field-group{margin-bottom:1rem}
+  .field-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c47a50;margin-bottom:.4rem;display:block;opacity:.8}
+  .fi{width:100%;padding:13px 15px;background:rgba(255,255,255,.04);border:1px solid #3a2018;border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:300;color:#f0e8e0;outline:none;transition:border .2s}
+  .fi:focus{border-color:#c47a50}
+  .fi::placeholder{color:#4a3020}
+
+  /* RESULT */
+  .result-screen{text-align:center}
+  .res-tag{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#c47a50;margin-bottom:.5rem;opacity:.8}
+  .res-grape{font-family:'Cormorant Garamond',serif;font-size:38px;color:#f0e8e0;margin-bottom:.5rem;font-style:italic;line-height:1.2}
+  .res-poem{font-family:'Cormorant Garamond',serif;font-size:17px;color:#c8b8a8;line-height:1.8;margin-bottom:1.5rem;font-style:italic;text-align:left}
+  .res-details{background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;text-align:left}
+  .detail-row{display:flex;gap:.75rem;margin-bottom:.75rem;align-items:flex-start}
+  .detail-row:last-child{margin-bottom:0}
+  .detail-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+  .detail-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#c47a50;opacity:.7;margin-bottom:.2rem}
+  .detail-text{font-size:13px;color:#c8b8a8;line-height:1.5}
+  .ig-row{display:flex;gap:10px;margin:1rem 0}
+  .ig-btn{flex:1;padding:12px 8px;background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:10px;font-family:'Jost',sans-serif;font-size:12px;color:#9a7060;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+  .ig-btn:hover{border-color:#c47a50;color:#c47a50}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">Bendita Taça</div>
+
+  <!-- INTRO -->
+  <div id="intro" class="screen intro-screen active">
+    <span class="big-icon">🍷</span>
+    <div class="divider"></div>
+    <p class="intro-title">Qual vinho combina com o seu momento?</p>
+    <p class="intro-sub">5 perguntas para encontrar a uva perfeita para a sua ocasião.</p>
+    <button class="btn-primary" onclick="startQuiz()">Descobrir →</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="screen">
+    <div class="progress-bar" id="progress"></div>
+    <div class="ql" id="q-label"></div>
+    <div class="qt" id="q-text"></div>
+    <div class="opts" id="q-options"></div>
+    <button class="btn-primary" id="next-btn" onclick="nextQuestion()" disabled>Continuar</button>
+  </div>
+
+  <!-- LEAD -->
+  <div id="lead" class="screen">
+    <div class="ql">Quase lá</div>
+    <div class="lead-title">Descubra seu vinho ideal ✨</div>
+    <div class="lead-sub">Preencha para receber sua sugestão e ficar por dentro do Clube da Taça.</div>
+    <div class="field-group">
+      <label class="field-label">Nome</label>
+      <input class="fi" id="f-nome" type="text" placeholder="Seu nome"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label">WhatsApp</label>
+      <input class="fi" id="f-whats" type="tel" placeholder="(00) 00000-0000"/>
+    </div>
+    <button class="btn-primary" onclick="submitLead()" style="margin-top:.5rem">Ver minha harmonização →</button>
+  </div>
+
+
+  <!-- RESULT -->
+  <div id="result" class="screen result-screen">
+    <span class="big-icon" id="res-icon"></span>
+    <div class="divider"></div>
+    <div class="res-tag">Sua harmonização</div>
+    <div class="res-grape" id="res-grape"></div>
+    <div class="res-poem" id="res-poem"></div>
+    <div class="res-details" id="res-details"></div>
+    <button class="btn-primary" onclick="downloadCard()" style="margin-bottom:.75rem">Baixar meu card →</button>
+    <a class="ig-btn" href="https://www.instagram.com/bendita_taca" target="_blank" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-bottom:.75rem;text-decoration:none">📷 @bendita_taca</a>
+    <button class="btn-secondary" onclick="restart()">Refazer a harmonização</button>
+  </div>
+</div>
+<canvas id="card-canvas" style="display:none"></canvas>
+
+<script>
+const FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLScA6XgI8HnU7BuqTSpo4zjDbXlgEClLrYhlnVC5VG0is86GsQ/formResponse";
+const FIELDS={nome:"entry.517896848",whats:"entry.149801491",resultado:"entry.1747273301"};
+
+const questions=[
+  {
+    label:"Pergunta 1 de 5",
+    text:"Qual é a ocasião?",
+    categories:[
+      {label:"🌙 Momentos íntimos",options:["Fim de dia só minha","Leitura + silêncio","Noite sem compromisso"]},
+      {label:"👯 Com amigas",options:["Noite de conversa e risada","Reencontro de amigas","Série/filme em grupo"]},
+      {label:"❤️ A dois",options:["Jantar romântico em casa","Aniversário do casal","Noite de reconquista"]},
+      {label:"🎉 Celebrações",options:["Aniversário","Conquista profissional","Formatura"]},
+      {label:"🍽️ À mesa",options:["Almoço de domingo em família","Churrasco / happy hour","Piquenique ao ar livre"]},
+      {label:"💼 Após o trabalho",options:["Semana pesada que finalmente acabou","Meta batida / promoção","Home office longo"]}
+    ]
+  },
+  {
+    label:"Pergunta 2 de 5",
+    text:"O que vai estar na mesa?",
+    options:["🥩 Carnes vermelhas","🍗 Aves e suínos","🍝 Massas e risotos","🦞 Frutos do mar","🧀 Queijos e frios","🥨 Petiscos variados","🍰 Sobremesas","🥗 Vegetariano"]
+  },
+  {
+    label:"Pergunta 3 de 5",
+    text:"Como você prefere seu vinho?",
+    options:["🌸 Leve e suave","🍂 Encorpado e seco","🍯 Doce e frutado","✨ Espumante","🎲 Surpreenda-me!"]
+  },
+  {
+    label:"Pergunta 4 de 5",
+    text:"Qual é a estação do momento?",
+    options:["🌸 Primavera","☀️ Verão","🍂 Outono","❄️ Inverno"]
+  },
+  {
+    label:"Pergunta 5 de 5",
+    text:"Como é o ambiente?",
+    options:["🛋️ Em casa relaxando","🕯️ Mesa posta e caprichada","🌿 Ao ar livre","🥂 Bar ou restaurante"]
+  }
+];
+
+// Tabela de harmonização
+const harmonizacoes = {
+  // Por comida + preferência
+  "Carnes vermelhas|Encorpado e seco":   {uva:"Cabernet Sauvignon",icon:"🍷",poem:"Robusto, estruturado, cheio de camadas. O Cabernet Sauvignon é o par natural de carnes intensas — ele abraça o prato com taninos firmes e um final longo que convida à segunda taça.",dicas:["Temperatura ideal: 16–18°C","Deixe respirar por 20 minutos","Combina com chimichurri e alecrim"]},
+  "Carnes vermelhas|Leve e suave":        {uva:"Malbec",icon:"🍇",poem:"Aveludado e generoso, o Malbec traz a intensidade das carnes com uma suavidade que surpreende. Frutos escuros e um toque de violeta — sofisticado sem esforço.",dicas:["Temperatura ideal: 16–17°C","Harmoniza com carnes ao molho","Experimente com um toque de ameixa"]},
+  "Carnes vermelhas|Surpreenda-me!":      {uva:"Syrah",icon:"🌶️",poem:"Selvagem e perfumado, o Syrah é para quem não tem medo de intensidade. Pimenta, frutas escuras e uma elegância rústica que combina com carnes na brasa.",dicas:["Temperatura ideal: 16–18°C","Ideal com carnes defumadas","Aromas de especiarias e frutas negras"]},
+  "Aves e suínos|Leve e suave":           {uva:"Pinot Noir",icon:"🌹",poem:"Delicado como seda, o Pinot Noir é o companheiro perfeito de aves e carnes mais leves. Cereja fresca, terra úmida e uma elegância que não grita — sussurra.",dicas:["Temperatura ideal: 14–16°C","Deixe respirar por 15 minutos","Evite pratos muito condimentados"]},
+  "Aves e suínos|Encorpado e seco":       {uva:"Chardonnay",icon:"🌟",poem:"Encorpado e mineral, o Chardonnay envelhecido em carvalho traz cremosidade que eleva aves e suínos a outro nível. Manteiga, baunilha e frescor no mesmo copo.",dicas:["Temperatura ideal: 10–12°C","Harmoniza com molhos cremosos","Experimente com frango assado com ervas"]},
+  "Aves e suínos|Doce e frutado":         {uva:"Riesling",icon:"🍑",poem:"Flores brancas, pêssego e uma acidez que limpa o palato — o Riesling é pura leveza com personalidade. Perfeito para aves com toque agridoce.",dicas:["Temperatura ideal: 8–10°C","Combina com molhos de frutas","Experimente com pato ao laranja"]},
+  "Massas e risotos|Leve e suave":        {uva:"Sangiovese",icon:"🍅",poem:"Tomate, ervas e terra toscana — o Sangiovese foi feito para a mesa italiana. Leve o suficiente para não competir com o prato, profundo o suficiente para surpreender.",dicas:["Temperatura ideal: 15–17°C","Perfeito com molho pomodoro","Harmoniza com parmesão curado"]},
+  "Massas e risotos|Encorpado e seco":    {uva:"Barbera",icon:"🫐",poem:"Acidez vibrante e fruta generosa — a Barbera abraça massas com molhos ricos e risotos cremosos com uma naturalidade que parece mágica.",dicas:["Temperatura ideal: 15–16°C","Ideal com risoto de funghi","Combina com massas ao ragú"]},
+  "Frutos do mar|Leve e suave":           {uva:"Sauvignon Blanc",icon:"🌊",poem:"Cítrico, herbáceo e com uma mineralidade que lembra a brisa do mar — o Sauvignon Blanc é o par mais natural para frutos do mar. Fresco como uma onda.",dicas:["Temperatura ideal: 8–10°C","Não deixe esquentar demais","Combina com limão e ervas frescas"]},
+  "Frutos do mar|Espumante":              {uva:"Espumante Brut",icon:"✨",poem:"Bolhas finas, acidez precisa e aquela leveza que eleva qualquer fruto do mar à categoria de celebração. O espumante Brut é o eterno par do mar.",dicas:["Temperatura ideal: 6–8°C","Sirva sempre bem gelado","Taça flauta preserva as bolhas"]},
+  "Frutos do mar|Doce e frutado":         {uva:"Moscato",icon:"🍊",poem:"Delicado e aromático, o Moscato levemente adocicado cria um contraste encantador com frutos do mar. Uma surpresa que agrada ao primeiro gole.",dicas:["Temperatura ideal: 6–8°C","Ideal com camarão agridoce","Perfeito para quem prefere mais suavidade"]},
+  "Queijos e frios|Doce e frutado":       {uva:"Porto",icon:"🧀",poem:"A combinação mais clássica do mundo do vinho — o Porto encontra nos queijos curados seu par perfeito. Doce, complexo e inesquecível no final de uma boa noite.",dicas:["Temperatura ideal: 14–16°C","Ideal com queijos azuis","Experimente com nozes e mel"]},
+  "Queijos e frios|Leve e suave":         {uva:"Rosé",icon:"🌸",poem:"Versátil como poucos, o Rosé percorre a tábua de frios com leveza e charme. Frutas vermelhas frescas e uma acidez que convida à próxima fatia.",dicas:["Temperatura ideal: 8–10°C","Harmoniza com presuntos curados","Perfeito para tardes de petisco"]},
+  "Queijos e frios|Encorpado e seco":     {uva:"Merlot",icon:"🍒",poem:"Suave e redondo, o Merlot envolve queijos com sua textura aveludada e fruta madura. Sem arestas, sem conflitos — pura harmonia na taça.",dicas:["Temperatura ideal: 15–17°C","Combina com queijo brie e camembert","Deixe respirar antes de servir"]},
+  "Petiscos variados|Espumante":          {uva:"Prosecco",icon:"🥂",poem:"Leve, borbulhante e festivo — o Prosecco foi feito para petiscos e conversas que não terminam. Uma taça puxa a outra com uma facilidade perigosa.",dicas:["Temperatura ideal: 6–8°C","Perfeito para happy hours","Combina com tudo e com todo mundo"]},
+  "Petiscos variados|Leve e suave":       {uva:"Vinho Verde",icon:"🌿",poem:"Fresco, leve e com uma borbulha natural quase imperceptível — o Vinho Verde é a pedida certa para petiscos despretensiosos e conversas que fluem.",dicas:["Temperatura ideal: 8–10°C","Sirva bem gelado","Perfeito para dias quentes"]},
+  "Sobremesas|Doce e frutado":            {uva:"Moscatel",icon:"🍯",poem:"Aromático e dourado, o Moscatel transforma qualquer sobremesa em ritual. Flores de laranjeira, mel e uma doçura que não enjoa — apenas encanta.",dicas:["Temperatura ideal: 6–8°C","Ideal com bolos de frutas e mel","Evite sobremesas muito doces"]},
+  "Sobremesas|Espumante":                 {uva:"Espumante Demi-Sec",icon:"🎂",poem:"Bolhas festivas e um toque adocicado que abraça bolos, tortas e chocolates com elegância. O espumante Demi-Sec é a sobremesa dentro da taça.",dicas:["Temperatura ideal: 6–8°C","Perfeito com bolo de aniversário","Harmoniza com frutas vermelhas"]},
+  "Vegetariano|Leve e suave":             {uva:"Grenache",icon:"🌱",poem:"Frutado, herbal e com uma leveza que respeita os sabores vegetais — o Grenache é o tinto que mais ama legumes. Floral, suave e surpreendentemente versátil.",dicas:["Temperatura ideal: 14–16°C","Combina com legumes grelhados","Perfeito com pimentões e berinjela"]},
+  "Vegetariano|Espumante":                {uva:"Cava Brut",icon:"🫧",poem:"Mineralidade e frescor que elevam qualquer prato vegetariano. O Cava Brut traz complexidade sem peso — a escolha ideal para quem valoriza leveza e sofisticação.",dicas:["Temperatura ideal: 7–9°C","Harmoniza com saladas elaboradas","Combina com queijos frescos e ervas"]},
+};
+
+// Fallbacks por preferência
+const fallbacks = {
+  "Leve e suave":    {uva:"Pinot Noir",icon:"🌹",poem:"Elegante e delicado, o Pinot Noir se adapta a qualquer momento com graça. Cereja, terra úmida e uma suavidade que conquista quem ainda está descobrindo o mundo do vinho.",dicas:["Temperatura ideal: 14–16°C","Versátil para diversas ocasiões","Um clássico que nunca decepciona"]},
+  "Encorpado e seco":{uva:"Cabernet Sauvignon",icon:"🍷",poem:"Estruturado e memorável, o Cabernet Sauvignon é o rei dos tintos encorpados. Uma escolha que nunca decepciona — apenas impressiona.",dicas:["Temperatura ideal: 16–18°C","Deixe respirar antes de servir","Um clássico para momentos especiais"]},
+  "Doce e frutado":  {uva:"Moscatel",icon:"🍯",poem:"Aromático e envolvente, o Moscatel é pura alegria na taça. Flores, frutas e uma doçura equilibrada que agrada do primeiro ao último gole.",dicas:["Temperatura ideal: 6–8°C","Sirva bem gelado","Perfeito para finalizar a noite"]},
+  "Espumante":       {uva:"Espumante Brut",icon:"✨",poem:"Bolhas que celebram qualquer momento — o espumante Brut é a resposta certa para toda ocasião. Fresco, elegante e inesquecível.",dicas:["Temperatura ideal: 6–8°C","Sirva sempre gelado","Toda ocasião merece um brinde"]},
+  "Surpreenda-me!":  {uva:"Syrah",icon:"🌶️",poem:"Ousado e perfumado, o Syrah é para quem não tem medo de se surpreender. Especiarias, frutas escuras e uma personalidade marcante que fica na memória.",dicas:["Temperatura ideal: 16–18°C","Ideal para aventureiros do vinho","Um vinho que conta histórias"]},
+};
+
+let answers={};
+let current=0;
+let answered=false;
+
+function buildProgress(c){
+  const bar=document.getElementById('progress');
+  bar.innerHTML='';
+  for(let i=0;i<questions.length;i++){
+    const d=document.createElement('div');
+    d.className='pd'+(i<c?' done':'');
+    bar.appendChild(d);
+  }
+}
+
+function showQuestion(index){
+  const q=questions[index];
+  document.getElementById('q-label').textContent=q.label;
+  document.getElementById('q-text').textContent=q.text;
+  const opts=document.getElementById('q-options');
+  opts.innerHTML='';
+
+  if(q.categories){
+    q.categories.forEach(cat=>{
+      const catLabel=document.createElement('div');
+      catLabel.className='cat-label';
+      catLabel.textContent=cat.label;
+      opts.appendChild(catLabel);
+      cat.options.forEach(o=>{
+        const btn=document.createElement('button');
+        btn.className='ob';
+        btn.textContent=o;
+        btn.onclick=()=>selectOption(o);
+        opts.appendChild(btn);
+      });
+    });
+  } else {
+    q.options.forEach(o=>{
+      const btn=document.createElement('button');
+      btn.className='ob';
+      btn.textContent=o;
+      btn.onclick=()=>selectOption(o);
+      opts.appendChild(btn);
+    });
+  }
+
+  document.getElementById('next-btn').disabled=true;
+  buildProgress(index);
+  answered=false;
+  window.scrollTo(0,0);
+}
+
+function selectOption(val){
+  if(answered)return;
+  answered=true;
+  answers[current]=val;
+  document.querySelectorAll('.ob').forEach(b=>{
+    b.classList.toggle('selected', b.textContent===val);
+  });
+  document.getElementById('next-btn').disabled=false;
+}
+
+function nextQuestion(){
+  current++;
+  if(current>=questions.length){
+    showScreen('lead');
+  } else {
+    showQuestion(current);
+  }
+}
+
+function getResult(){
+  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
+  const preferencia=(answers[2]||'').replace(/^[^\s]+ /,'');
+  const chave=comida+'|'+preferencia;
+  return harmonizacoes[chave] || fallbacks[preferencia] || fallbacks["Espumante"];
+}
+
+function submitLead(){
+  const nome=document.getElementById('f-nome').value.trim();
+  const whats=document.getElementById('f-whats').value.trim();
+  const result=getResult();
+  const body=new URLSearchParams();
+  body.append(FIELDS.nome,nome||'não informado');
+  body.append(FIELDS.whats,whats||'não informado');
+  body.append(FIELDS.resultado,result.uva);
+  fetch(FORM_URL,{method:'POST',body,mode:'no-cors'}).catch(()=>{});
+  showResult();
+}
+
+function showResult(){
+  const r=getResult();
+  const ocasiao=answers[0]||'';
+  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
+  const estacao=(answers[3]||'').replace(/^[^\s]+ /,'');
+  const ambiente=(answers[4]||'').replace(/^[^\s]+ /,'');
+
+  document.getElementById('res-icon').textContent=r.icon;
+  document.getElementById('res-grape').textContent=r.uva;
+  document.getElementById('res-poem').textContent=r.poem;
+
+  const det=document.getElementById('res-details');
+  det.innerHTML=`
+    <div class="detail-row"><span class="detail-icon">🥂</span><div><div class="detail-label">Ocasião</div><div class="detail-text">${ocasiao}</div></div></div>
+    <div class="detail-row"><span class="detail-icon">🍽️</span><div><div class="detail-label">À mesa</div><div class="detail-text">${comida}</div></div></div>
+    <div class="detail-row"><span class="detail-icon">💡</span><div><div class="detail-label">Dicas</div><div class="detail-text">${r.dicas.join(' · ')}</div></div></div>
+  `;
+  showScreen('result');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function startQuiz(){showScreen('quiz');showQuestion(0);}
+function restart(){answers={};current=0;answered=false;showScreen('intro');}
+
+function wrapText(ctx,text,x,y,maxWidth,lineHeight){
+  const words=text.split(' ');
+  let line='',cy=y;
+  for(let n=0;n<words.length;n++){
+    const test=line+words[n]+' ';
+    if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,cy);line=words[n]+' ';cy+=lineHeight;}
+    else{line=test;}
+  }
+  ctx.fillText(line,x,cy);
+  return cy+lineHeight;
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function downloadCard(){
+  const r=getResult();
+  const ocasiao=answers[0]||'';
+  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
+  const canvas=document.getElementById('card-canvas');
+  const W=1080,H=1920;
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  // fundo creme claro
+  ctx.fillStyle='#F5EDE8';
+  ctx.fillRect(0,0,W,H);
+
+  // barras topo e base
+  ctx.fillStyle='#7B4A2D';
+  ctx.fillRect(0,0,W,16);
+  ctx.fillRect(0,H-16,W,16);
+
+  // ornamentos laterais
+  ctx.fillStyle='#7B4A2D';
+  ctx.globalAlpha=.06;
+  ctx.fillRect(0,0,8,H);
+  ctx.fillRect(W-8,0,8,H);
+  ctx.globalAlpha=1;
+
+  // logo
+  ctx.fillStyle='#7B4A2D';
+  ctx.font='italic 52px Georgia,serif';
+  ctx.textAlign='center';
+  ctx.fillText('Bendita Taça',W/2,130);
+
+  // subtítulo
+  ctx.fillStyle='#b08070';
+  ctx.font='24px Arial,sans-serif';
+  ctx.fillText('harmonização',W/2,172);
+
+  // divisor
+  ctx.fillStyle='#7B4A2D';
+  ctx.globalAlpha=.3;
+  ctx.fillRect(W/2-40,196,80,1.5);
+  ctx.globalAlpha=1;
+
+  // ícone
+  ctx.font='120px serif';
+  ctx.fillText(r.icon,W/2,360);
+
+  // tag
+  ctx.fillStyle='#b08070';
+  ctx.font='22px Arial,sans-serif';
+  ctx.letterSpacing='4px';
+  ctx.fillText('SUA UVA IDEAL',W/2,418);
+  ctx.letterSpacing='0px';
+
+  // uva
+  ctx.fillStyle='#3D2314';
+  ctx.font='italic 88px Georgia,serif';
+  ctx.fillText(r.uva,W/2,528);
+
+  // divisor 2
+  ctx.fillStyle='#7B4A2D';
+  ctx.globalAlpha=.25;
+  ctx.fillRect(W/2-40,556,80,1.5);
+  ctx.globalAlpha=1;
+
+  // poema
+  ctx.fillStyle='#4a3728';
+  ctx.font='italic 32px Georgia,serif';
+  ctx.textAlign='left';
+  let y=614;
+  y=wrapText(ctx,r.poem,80,y,920,52);
+
+  // caixa detalhes
+  y+=30;
+  ctx.fillStyle='#EDE0D8';
+  roundRect(ctx,60,y,960,220,16);
+  ctx.fill();
+
+  ctx.fillStyle='#b08070';
+  ctx.font='20px Arial,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('OCASIÃO',90,y+44);
+  ctx.fillStyle='#3D2314';
+  ctx.font='28px Georgia,serif';
+  wrapText(ctx,ocasiao,90,y+78,880,36);
+
+  ctx.fillStyle='#b08070';
+  ctx.font='20px Arial,sans-serif';
+  ctx.fillText('À MESA',90,y+136);
+  ctx.fillStyle='#3D2314';
+  ctx.font='28px Georgia,serif';
+  ctx.fillText(comida,90,y+170);
+
+  // dicas
+  y+=244;
+  ctx.fillStyle='#b08070';
+  ctx.font='20px Arial,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('DICAS',80,y+10);
+  ctx.fillStyle='#4a3728';
+  ctx.font='26px Georgia,serif';
+  r.dicas.forEach((d,i)=>{
+    ctx.fillText('· '+d,80,y+46+(i*40));
+  });
+
+  // footer
+  y+=200;
+  ctx.fillStyle='#c0a898';
+  ctx.fillRect(60,H-160,960,1);
+  ctx.fillStyle='#9a7060';
+  ctx.font='28px Arial,sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('@bendita_taca',W/2,H-108);
+  ctx.fillStyle='#b08878';
+  ctx.font='22px Arial,sans-serif';
+  ctx.fillText('instagram.com/bendita_taca',W/2,H-68);
+
+  const link=document.createElement('a');
+  link.download='bendita-taca-harmonizacao.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+}
+
+function startQuiz(){showScreen('quiz');showQuestion(0);}
+function restart(){answers={};current=0;answered=false;showScreen('intro');}
+</script>
+</body>
+</html>
