@@ -1,474 +1,1202 @@
 <!DOCTYPE html>
+<!--
+  Clube da Pausa — antes de publicar, configure a conexão com a planilha:
+  1. Crie a planilha e o Apps Script (veja instruções que a Fernanda recebeu no chat).
+  2. Cole a URL do Apps Script implantado na constante API_URL, dentro da tag <script> no final deste arquivo.
+-->
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bendita Taça — Harmonização</title>
-<meta property="og:title" content="Bendita Taça — Qual vinho combina com o seu momento?"/>
-<meta property="og:description" content="Descubra a uva ideal para o seu momento em 5 perguntas."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@300;400&display=swap" rel="stylesheet"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clube da Pausa — Controle de Pacotes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{min-height:100%;background:#1a0f0a}
-  body{font-family:'Jost',sans-serif;font-weight:300;color:#f0e8e0;display:flex;justify-content:center;padding:2rem 1rem 4rem}
-  .container{width:100%;max-width:480px}
+  :root{
+    --bg:#F8F1E7;
+    --surface:#FFFFFF;
+    --surface-alt:#F1E3D0;
+    --line:#E3D3BC;
+    --text:#2B1620;
+    --text-muted:#7A6660;
+    --wine:#7A2036;
+    --wine-deep:#5A1728;
+    --wine-soft:#E7C9CE;
+    --gold:#B98A3E;
+    --gold-soft:#EFDCB8;
+    --alert:#C1502E;
+    --alert-soft:#F4DAC9;
+    --sage:#6B7D5B;
+    --sage-soft:#DCE3D1;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:600;
+    letter-spacing:.2px;
+  }
+  .app{
+    max-width:960px;
+    margin:0 auto;
+    padding:28px 20px 80px;
+  }
 
-  /* grain overlay */
-  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:18px;
+    margin-bottom:22px;
+  }
+  header.top .titles h1{
+    font-size:34px;
+    margin:0 0 2px;
+    color:var(--wine-deep);
+  }
+  header.top .titles p{
+    margin:0;
+    color:var(--text-muted);
+    font-size:14px;
+    font-style:italic;
+    font-family:'Cormorant Garamond',serif;
+  }
+  .stats{
+    display:flex;
+    gap:22px;
+  }
+  .stat{
+    text-align:right;
+  }
+  .stat .n{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:700;
+    font-size:26px;
+    color:var(--wine);
+    line-height:1;
+  }
+  .stat .l{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-muted);
+  }
 
-  .logo{font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:.22em;color:#c9908070;text-transform:uppercase;text-align:center;padding-top:1.75rem;margin-bottom:2rem;position:relative;z-index:1}
+  /* ---------- Alerts ---------- */
+  .alerts{
+    margin-bottom:26px;
+  }
+  .alerts h2{
+    font-size:18px;
+    margin:0 0 10px;
+    color:var(--wine-deep);
+  }
+  .alert-empty{
+    font-size:13px;
+    color:var(--text-muted);
+    font-style:italic;
+    padding:10px 0;
+  }
+  .alert-card{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:var(--alert-soft);
+    border:1px solid #E3B79C;
+    border-radius:var(--radius);
+    padding:12px 16px;
+    margin-bottom:8px;
+  }
+  .alert-card.done{
+    background:var(--gold-soft);
+    border-color:#D9BE85;
+  }
+  .alert-card .msg strong{ font-weight:700; }
+  .alert-card .msg{ font-size:14px; }
+  .alert-card .tag{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--text-muted);
+    display:block;
+    margin-top:2px;
+  }
+  .btn-mini{
+    background:var(--wine);
+    color:#fff;
+    border:none;
+    padding:7px 13px;
+    border-radius:20px;
+    font-size:12.5px;
+    font-family:'DM Sans',sans-serif;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-mini:hover{ background:var(--wine-deep); }
 
-  .progress-bar{display:flex;gap:5px;margin-bottom:2rem;position:relative;z-index:1}
-  .pd{height:1px;flex:1;background:#3a2018;border-radius:1px;transition:background .6s}
-  .pd.done{background:#c47a50}
+  /* ---------- Section shells ---------- */
+  section.block{
+    margin-bottom:30px;
+  }
+  .block-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .block-head h2{
+    font-size:20px;
+    margin:0;
+    color:var(--wine-deep);
+  }
+  .btn{
+    background:var(--wine);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:600;
+    font-family:'DM Sans',sans-serif;
+    cursor:pointer;
+  }
+  .btn:hover{ background:var(--wine-deep); }
+  .btn.secondary{
+    background:transparent;
+    color:var(--wine);
+    border:1px solid var(--wine);
+  }
+  .btn.secondary:hover{ background:var(--wine-soft); }
 
-  .screen{display:none;animation:fadeIn .5s ease;position:relative;z-index:1}
-  .screen.active{display:block}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  /* ---------- Events strip ---------- */
+  .events-strip{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:6px;
+  }
+  .event-chip{
+    flex:0 0 auto;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:8px 16px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--text);
+    white-space:nowrap;
+  }
+  .event-chip.active{
+    background:var(--wine);
+    border-color:var(--wine);
+    color:#fff;
+  }
+  .event-chip .cnt{
+    font-weight:400;
+    opacity:.75;
+    margin-left:4px;
+  }
+  .event-chip.new{
+    border-style:dashed;
+    color:var(--wine);
+  }
 
-  .divider{width:32px;height:1px;background:#c47a50;margin:0 auto 1.5rem;opacity:.4}
+  /* ---------- Attendance panel ---------- */
+  .att-panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-top:12px;
+  }
+  .att-panel h3{
+    margin:0 0 4px;
+    font-size:18px;
+    color:var(--wine-deep);
+  }
+  .att-panel .sub{
+    font-size:12.5px;
+    color:var(--text-muted);
+    margin-bottom:12px;
+  }
+  .att-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 4px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+    gap:10px;
+  }
+  .att-row:last-child{ border-bottom:none; }
+  .att-row .name{ font-weight:600; }
+  .att-row .info{ font-size:12px; color:var(--text-muted); }
+  .switch{
+    position:relative;
+    width:42px;
+    height:24px;
+    flex:0 0 auto;
+  }
+  .switch input{ display:none; }
+  .switch .track{
+    position:absolute; inset:0;
+    background:var(--line);
+    border-radius:20px;
+    transition:.15s;
+    cursor:pointer;
+  }
+  .switch .track:before{
+    content:'';
+    position:absolute;
+    width:18px;height:18px;
+    left:3px; top:3px;
+    background:#fff;
+    border-radius:50%;
+    transition:.15s;
+    box-shadow:0 1px 2px rgba(0,0,0,.25);
+  }
+  .switch input:checked + .track{ background:var(--sage); }
+  .switch input:checked + .track:before{ transform:translateX(18px); }
+  .att-empty{
+    font-size:13px;
+    color:var(--text-muted);
+    font-style:italic;
+    padding:8px 4px;
+  }
+  .att-panel-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:12px;
+  }
 
-  /* INTRO */
-  .intro-screen{text-align:center;padding-top:1rem}
-  .big-icon{font-size:48px;display:block;margin-bottom:1.25rem}
-  .intro-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-style:italic;color:#f0e8e0;margin-bottom:.6rem;line-height:1.3}
-  .intro-sub{font-size:14px;color:#9a7060;line-height:1.7;margin-bottom:2rem}
+  .avulsas-section{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  .avulsas-section h4{
+    margin:0 0 8px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-muted);
+    font-weight:700;
+    font-family:'DM Sans',sans-serif;
+  }
+  .avulsa-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:6px 4px;
+    font-size:14px;
+  }
+  .avulsa-row .name{ font-weight:500; }
+  .avulsa-add{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+  }
+  .avulsa-add input{
+    flex:1;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .avulsa-empty{
+    font-size:12.5px;
+    color:var(--text-muted);
+    font-style:italic;
+  }
 
-  /* QUIZ */
-  .ql{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#c47a50;margin-bottom:.75rem;opacity:.8}
-  .qt{font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.4;color:#f0e8e0;margin-bottom:1.75rem;font-weight:400}
+  .notes-section{
+    margin-bottom:14px;
+  }
+  .notes-section .field{ margin-bottom:10px; }
+  .notes-section textarea{
+    width:100%;
+    min-height:70px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    resize:vertical;
+  }
 
-  /* categoria */
-  .cat-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c47a5080;margin:1.25rem 0 .5rem;padding-left:2px}
-  .cat-label:first-child{margin-top:0}
+  .finance-section{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+  }
+  .finance-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .finance-head h4{
+    margin:0;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-muted);
+    font-weight:700;
+    font-family:'DM Sans',sans-serif;
+  }
+  .finance-section .field{ margin-bottom:10px; }
+  .cost-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .cost-item label{
+    display:block;
+    font-size:11.5px;
+    color:var(--text-muted);
+    margin-bottom:4px;
+  }
+  .cost-item input{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13.5px;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .finance-summary{
+    background:var(--surface-alt);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+  }
+  .finance-summary .line{
+    display:flex;
+    justify-content:space-between;
+    padding:2px 0;
+    color:var(--text-muted);
+  }
+  .finance-summary .line.profit{
+    color:var(--text);
+    font-weight:700;
+    border-top:1px solid var(--line);
+    margin-top:4px;
+    padding-top:6px;
+  }
+  .repasse-list{
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+  }
+  .repasse-list .line{
+    color:var(--wine-deep);
+    font-weight:600;
+  }
 
-  .opts{display:flex;flex-direction:column;gap:8px}
-  .ob{background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:10px;padding:13px 16px;text-align:left;font-family:'Jost',sans-serif;font-weight:300;font-size:14px;color:#c8b8a8;cursor:pointer;transition:all .2s;line-height:1.4;width:100%}
-  .ob:hover{border-color:#c47a50;background:rgba(196,122,80,.06);color:#f0e8e0}
-  .ob.selected{border-color:#c47a50;background:rgba(196,122,80,.1);color:#f0e8e0}
+  /* ---------- Member grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:14px;
+  }
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    position:relative;
+  }
+  .card.finishing{ border-color:var(--alert); box-shadow:0 0 0 1px var(--alert) inset; }
+  .card.completed{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset; opacity:.9; }
+  .card .name{
+    font-family:'Cormorant Garamond',serif;
+    font-weight:700;
+    font-size:20px;
+    color:var(--wine-deep);
+    margin:0 0 2px;
+  }
+  .card .meta{
+    font-size:11.5px;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
+  .glasses{
+    display:flex;
+    gap:5px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .glasses svg{ width:18px; height:22px; }
+  .card .status{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--sage);
+  }
+  .card .status.finishing{ color:var(--alert); }
+  .card .status.completed{ color:var(--gold); }
+  .card-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+  }
+  .icon-btn{
+    background:none;
+    border:none;
+    color:var(--text-muted);
+    cursor:pointer;
+    font-size:12px;
+    text-decoration:underline;
+    padding:0;
+  }
+  .icon-btn.danger{ color:var(--alert); }
 
-  /* BUTTONS */
-  .btn-primary{width:100%;padding:15px;background:#7B4A2D;border:none;border-radius:10px;color:#f0e8e0;font-family:'Jost',sans-serif;font-weight:400;font-size:14px;letter-spacing:.12em;cursor:pointer;transition:background .2s;margin-top:1.5rem}
-  .btn-primary:hover{background:#9a5c38}
-  .btn-primary:disabled{opacity:.3;pointer-events:none}
-  .btn-secondary{width:100%;padding:12px;background:none;border:1px solid #3a2018;border-radius:10px;color:#9a7060;font-family:'Jost',sans-serif;font-size:13px;cursor:pointer;margin-top:.75rem;transition:all .2s}
-  .btn-secondary:hover{border-color:#c47a50;color:#c47a50}
+  .empty-state{
+    text-align:center;
+    padding:36px 20px;
+    color:var(--text-muted);
+    font-size:14px;
+    background:var(--surface);
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+  }
 
-  /* LEAD */
-  .lead-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-style:italic;color:#f0e8e0;margin-bottom:.5rem;line-height:1.4}
-  .lead-sub{font-size:13px;color:#9a7060;line-height:1.7;margin-bottom:1.5rem}
-  .field-group{margin-bottom:1rem}
-  .field-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c47a50;margin-bottom:.4rem;display:block;opacity:.8}
-  .fi{width:100%;padding:13px 15px;background:rgba(255,255,255,.04);border:1px solid #3a2018;border-radius:10px;font-family:'Jost',sans-serif;font-size:14px;font-weight:300;color:#f0e8e0;outline:none;transition:border .2s}
-  .fi:focus{border-color:#c47a50}
-  .fi::placeholder{color:#4a3020}
+  details.history summary{
+    cursor:pointer;
+    font-size:13px;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
 
-  /* RESULT */
-  .result-screen{text-align:center}
-  .res-tag{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#c47a50;margin-bottom:.5rem;opacity:.8}
-  .res-grape{font-family:'Cormorant Garamond',serif;font-size:38px;color:#f0e8e0;margin-bottom:.5rem;font-style:italic;line-height:1.2}
-  .res-poem{font-family:'Cormorant Garamond',serif;font-size:17px;color:#c8b8a8;line-height:1.8;margin-bottom:1.5rem;font-style:italic;text-align:left}
-  .res-details{background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem;text-align:left}
-  .detail-row{display:flex;gap:.75rem;margin-bottom:.75rem;align-items:flex-start}
-  .detail-row:last-child{margin-bottom:0}
-  .detail-icon{font-size:16px;flex-shrink:0;margin-top:1px}
-  .detail-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#c47a50;opacity:.7;margin-bottom:.2rem}
-  .detail-text{font-size:13px;color:#c8b8a8;line-height:1.5}
-  .ig-row{display:flex;gap:10px;margin:1rem 0}
-  .ig-btn{flex:1;padding:12px 8px;background:rgba(255,255,255,.03);border:1px solid #3a2018;border-radius:10px;font-family:'Jost',sans-serif;font-size:12px;color:#9a7060;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
-  .ig-btn:hover{border-color:#c47a50;color:#c47a50}
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(43,22,32,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:22px;
+    width:100%;
+    max-width:380px;
+  }
+  .modal h3{ margin:0 0 14px; color:var(--wine-deep); font-size:20px; }
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    margin-bottom:5px;
+  }
+  .field input[type=text], .field input[type=date], .field input[type=number]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:14px;
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .pill-choice{ display:flex; gap:8px; }
+  .pill-choice label{
+    flex:1;
+    text-align:center;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 0;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--text-muted);
+  }
+  .pill-choice input{ display:none; }
+  .pill-choice input:checked + span{ color:var(--wine); }
+  .pill-choice label:has(input:checked){
+    border-color:var(--wine);
+    background:var(--wine-soft);
+    color:var(--wine-deep);
+  }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:18px;
+  }
+  .modal-actions .btn.secondary{ border-color:var(--line); color:var(--text-muted); }
+
+  .save-note{
+    font-size:11px;
+    color:var(--text-muted);
+    text-align:center;
+    margin-top:30px;
+  }
+
+  .sync-bar{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .sync-status{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  @media (max-width:520px){
+    header.top{ flex-direction:column; align-items:flex-start; }
+    .stats{ gap:16px; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="logo">Bendita Taça</div>
+<div class="app">
 
-  <!-- INTRO -->
-  <div id="intro" class="screen intro-screen active">
-    <span class="big-icon">🍷</span>
-    <div class="divider"></div>
-    <p class="intro-title">Qual vinho combina com o seu momento?</p>
-    <p class="intro-sub">5 perguntas para encontrar a uva perfeita para a sua ocasião.</p>
-    <button class="btn-primary" onclick="startQuiz()">Descobrir →</button>
-  </div>
-
-  <!-- QUIZ -->
-  <div id="quiz" class="screen">
-    <div class="progress-bar" id="progress"></div>
-    <div class="ql" id="q-label"></div>
-    <div class="qt" id="q-text"></div>
-    <div class="opts" id="q-options"></div>
-    <button class="btn-primary" id="next-btn" onclick="nextQuestion()" disabled>Continuar</button>
-  </div>
-
-  <!-- LEAD -->
-  <div id="lead" class="screen">
-    <div class="ql">Quase lá</div>
-    <div class="lead-title">Descubra seu vinho ideal ✨</div>
-    <div class="lead-sub">Preencha para receber sua sugestão e ficar por dentro do Clube da Taça.</div>
-    <div class="field-group">
-      <label class="field-label">Nome</label>
-      <input class="fi" id="f-nome" type="text" placeholder="Seu nome"/>
+  <header class="top">
+    <div class="titles">
+      <h1>Clube da Pausa</h1>
+      <p>vinho, arte e conversa — um encontro por mês</p>
     </div>
-    <div class="field-group">
-      <label class="field-label">WhatsApp</label>
-      <input class="fi" id="f-whats" type="tel" placeholder="(00) 00000-0000"/>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statActive">0</div><div class="l">Pacotes ativos</div></div>
+      <div class="stat"><div class="n" id="statFinishing">0</div><div class="l">Terminando</div></div>
+      <div class="stat"><div class="n" id="statEvents">0</div><div class="l">Encontros</div></div>
     </div>
-    <button class="btn-primary" onclick="submitLead()" style="margin-top:.5rem">Ver minha harmonização →</button>
+  </header>
+
+  <div class="sync-bar">
+    <span id="syncStatus" class="sync-status"></span>
+    <button class="btn secondary" onclick="loadState()">↻ Atualizar dados</button>
   </div>
 
+  <section class="alerts">
+    <h2>Atenção</h2>
+    <div id="alertsList"></div>
+  </section>
 
-  <!-- RESULT -->
-  <div id="result" class="screen result-screen">
-    <span class="big-icon" id="res-icon"></span>
-    <div class="divider"></div>
-    <div class="res-tag">Sua harmonização</div>
-    <div class="res-grape" id="res-grape"></div>
-    <div class="res-poem" id="res-poem"></div>
-    <div class="res-details" id="res-details"></div>
-    <button class="btn-primary" onclick="downloadCard()" style="margin-bottom:.75rem">Baixar meu card →</button>
-    <a class="ig-btn" href="https://www.instagram.com/bendita_taca" target="_blank" style="display:flex;justify-content:center;align-items:center;gap:6px;margin-bottom:.75rem;text-decoration:none">📷 @bendita_taca</a>
-    <button class="btn-secondary" onclick="restart()">Refazer a harmonização</button>
+  <section class="block">
+    <div class="block-head">
+      <h2>Encontros</h2>
+    </div>
+    <div class="events-strip" id="eventsStrip"></div>
+    <div id="attPanel"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2>Sócias com pacote</h2>
+      <button class="btn" id="btnAddMember">+ Nova sócia</button>
+    </div>
+    <div id="activeGrid" class="grid"></div>
+    <div id="emptyState"></div>
+    <details class="history" id="historyWrap" style="margin-top:18px; display:none;">
+      <summary id="historySummary">Pacotes concluídos e renovados</summary>
+      <div id="historyGrid" class="grid"></div>
+    </details>
+  </section>
+
+  <p class="save-note">Os dados ficam salvos numa planilha do Google. Clique em "Atualizar dados" para ver o que as outras sócias registraram.</p>
+</div>
+
+<!-- Modal: novo encontro -->
+<div class="overlay" id="overlayEvent">
+  <div class="modal">
+    <h3>Novo encontro</h3>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="newEventDate">
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeOverlay('overlayEvent')">Cancelar</button>
+      <button class="btn" onclick="submitNewEvent()">Criar</button>
+    </div>
   </div>
 </div>
-<canvas id="card-canvas" style="display:none"></canvas>
+
+<!-- Modal: nova/renovar sócia -->
+<div class="overlay" id="overlayMember">
+  <div class="modal">
+    <h3 id="memberModalTitle">Nova sócia</h3>
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="newMemberName" placeholder="Nome da sócia">
+    </div>
+    <div class="field">
+      <label>Data da compra</label>
+      <input type="date" id="newMemberDate">
+    </div>
+    <div class="field">
+      <label>Tamanho do pacote</label>
+      <div class="pill-choice">
+        <label><input type="radio" name="pkg" value="4" checked><span>4 encontros</span></label>
+        <label><input type="radio" name="pkg" value="8"><span>8 encontros</span></label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeOverlay('overlayMember')">Cancelar</button>
+      <button class="btn" onclick="submitNewMember()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nomes das fundadoras -->
+<div class="overlay" id="overlayFounders">
+  <div class="modal">
+    <h3>Fundadoras</h3>
+    <div id="founderFields"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeOverlay('overlayFounders')">Cancelar</button>
+      <button class="btn" onclick="submitFounders()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLScA6XgI8HnU7BuqTSpo4zjDbXlgEClLrYhlnVC5VG0is86GsQ/formResponse";
-const FIELDS={nome:"entry.517896848",whats:"entry.149801491",resultado:"entry.1747273301"};
+// ⚠️ CONFIGURAÇÃO: cole aqui a URL do seu Apps Script implantado (termina em /exec)
+const API_URL = 'https://script.google.com/macros/s/AKfycbwJzL7ZUYBb0X1dg9K-fSaor9U_qTxKTBYmmw3Bh0utyYrSsnxAAWPOzpIRAWB46fcd/exec';
 
-const questions=[
-  {
-    label:"Pergunta 1 de 5",
-    text:"Qual é a ocasião?",
-    categories:[
-      {label:"🌙 Momentos íntimos",options:["Fim de dia só minha","Leitura + silêncio","Noite sem compromisso"]},
-      {label:"👯 Com amigas",options:["Noite de conversa e risada","Reencontro de amigas","Série/filme em grupo"]},
-      {label:"❤️ A dois",options:["Jantar romântico em casa","Aniversário do casal","Noite de reconquista"]},
-      {label:"🎉 Celebrações",options:["Aniversário","Conquista profissional","Formatura"]},
-      {label:"🍽️ À mesa",options:["Almoço de domingo em família","Churrasco / happy hour","Piquenique ao ar livre"]},
-      {label:"💼 Após o trabalho",options:["Semana pesada que finalmente acabou","Meta batida / promoção","Home office longo"]}
-    ]
-  },
-  {
-    label:"Pergunta 2 de 5",
-    text:"O que vai estar na mesa?",
-    options:["🥩 Carnes vermelhas","🍗 Aves e suínos","🍝 Massas e risotos","🦞 Frutos do mar","🧀 Queijos e frios","🥨 Petiscos variados","🍰 Sobremesas","🥗 Vegetariano"]
-  },
-  {
-    label:"Pergunta 3 de 5",
-    text:"Como você prefere seu vinho?",
-    options:["🌸 Leve e suave","🍂 Encorpado e seco","🍯 Doce e frutado","✨ Espumante","🎲 Surpreenda-me!"]
-  },
-  {
-    label:"Pergunta 4 de 5",
-    text:"Qual é a estação do momento?",
-    options:["🌸 Primavera","☀️ Verão","🍂 Outono","❄️ Inverno"]
-  },
-  {
-    label:"Pergunta 5 de 5",
-    text:"Como é o ambiente?",
-    options:["🛋️ Em casa relaxando","🕯️ Mesa posta e caprichada","🌿 Ao ar livre","🥂 Bar ou restaurante"]
-  }
-];
+let state = { events: [], members: [], founders: [] };
+let activeEventId = null;
 
-// Tabela de harmonização
-const harmonizacoes = {
-  // Por comida + preferência
-  "Carnes vermelhas|Encorpado e seco":   {uva:"Cabernet Sauvignon",icon:"🍷",poem:"Robusto, estruturado, cheio de camadas. O Cabernet Sauvignon é o par natural de carnes intensas — ele abraça o prato com taninos firmes e um final longo que convida à segunda taça.",dicas:["Temperatura ideal: 16–18°C","Deixe respirar por 20 minutos","Combina com chimichurri e alecrim"]},
-  "Carnes vermelhas|Leve e suave":        {uva:"Malbec",icon:"🍇",poem:"Aveludado e generoso, o Malbec traz a intensidade das carnes com uma suavidade que surpreende. Frutos escuros e um toque de violeta — sofisticado sem esforço.",dicas:["Temperatura ideal: 16–17°C","Harmoniza com carnes ao molho","Experimente com um toque de ameixa"]},
-  "Carnes vermelhas|Surpreenda-me!":      {uva:"Syrah",icon:"🌶️",poem:"Selvagem e perfumado, o Syrah é para quem não tem medo de intensidade. Pimenta, frutas escuras e uma elegância rústica que combina com carnes na brasa.",dicas:["Temperatura ideal: 16–18°C","Ideal com carnes defumadas","Aromas de especiarias e frutas negras"]},
-  "Aves e suínos|Leve e suave":           {uva:"Pinot Noir",icon:"🌹",poem:"Delicado como seda, o Pinot Noir é o companheiro perfeito de aves e carnes mais leves. Cereja fresca, terra úmida e uma elegância que não grita — sussurra.",dicas:["Temperatura ideal: 14–16°C","Deixe respirar por 15 minutos","Evite pratos muito condimentados"]},
-  "Aves e suínos|Encorpado e seco":       {uva:"Chardonnay",icon:"🌟",poem:"Encorpado e mineral, o Chardonnay envelhecido em carvalho traz cremosidade que eleva aves e suínos a outro nível. Manteiga, baunilha e frescor no mesmo copo.",dicas:["Temperatura ideal: 10–12°C","Harmoniza com molhos cremosos","Experimente com frango assado com ervas"]},
-  "Aves e suínos|Doce e frutado":         {uva:"Riesling",icon:"🍑",poem:"Flores brancas, pêssego e uma acidez que limpa o palato — o Riesling é pura leveza com personalidade. Perfeito para aves com toque agridoce.",dicas:["Temperatura ideal: 8–10°C","Combina com molhos de frutas","Experimente com pato ao laranja"]},
-  "Massas e risotos|Leve e suave":        {uva:"Sangiovese",icon:"🍅",poem:"Tomate, ervas e terra toscana — o Sangiovese foi feito para a mesa italiana. Leve o suficiente para não competir com o prato, profundo o suficiente para surpreender.",dicas:["Temperatura ideal: 15–17°C","Perfeito com molho pomodoro","Harmoniza com parmesão curado"]},
-  "Massas e risotos|Encorpado e seco":    {uva:"Barbera",icon:"🫐",poem:"Acidez vibrante e fruta generosa — a Barbera abraça massas com molhos ricos e risotos cremosos com uma naturalidade que parece mágica.",dicas:["Temperatura ideal: 15–16°C","Ideal com risoto de funghi","Combina com massas ao ragú"]},
-  "Frutos do mar|Leve e suave":           {uva:"Sauvignon Blanc",icon:"🌊",poem:"Cítrico, herbáceo e com uma mineralidade que lembra a brisa do mar — o Sauvignon Blanc é o par mais natural para frutos do mar. Fresco como uma onda.",dicas:["Temperatura ideal: 8–10°C","Não deixe esquentar demais","Combina com limão e ervas frescas"]},
-  "Frutos do mar|Espumante":              {uva:"Espumante Brut",icon:"✨",poem:"Bolhas finas, acidez precisa e aquela leveza que eleva qualquer fruto do mar à categoria de celebração. O espumante Brut é o eterno par do mar.",dicas:["Temperatura ideal: 6–8°C","Sirva sempre bem gelado","Taça flauta preserva as bolhas"]},
-  "Frutos do mar|Doce e frutado":         {uva:"Moscato",icon:"🍊",poem:"Delicado e aromático, o Moscato levemente adocicado cria um contraste encantador com frutos do mar. Uma surpresa que agrada ao primeiro gole.",dicas:["Temperatura ideal: 6–8°C","Ideal com camarão agridoce","Perfeito para quem prefere mais suavidade"]},
-  "Queijos e frios|Doce e frutado":       {uva:"Porto",icon:"🧀",poem:"A combinação mais clássica do mundo do vinho — o Porto encontra nos queijos curados seu par perfeito. Doce, complexo e inesquecível no final de uma boa noite.",dicas:["Temperatura ideal: 14–16°C","Ideal com queijos azuis","Experimente com nozes e mel"]},
-  "Queijos e frios|Leve e suave":         {uva:"Rosé",icon:"🌸",poem:"Versátil como poucos, o Rosé percorre a tábua de frios com leveza e charme. Frutas vermelhas frescas e uma acidez que convida à próxima fatia.",dicas:["Temperatura ideal: 8–10°C","Harmoniza com presuntos curados","Perfeito para tardes de petisco"]},
-  "Queijos e frios|Encorpado e seco":     {uva:"Merlot",icon:"🍒",poem:"Suave e redondo, o Merlot envolve queijos com sua textura aveludada e fruta madura. Sem arestas, sem conflitos — pura harmonia na taça.",dicas:["Temperatura ideal: 15–17°C","Combina com queijo brie e camembert","Deixe respirar antes de servir"]},
-  "Petiscos variados|Espumante":          {uva:"Prosecco",icon:"🥂",poem:"Leve, borbulhante e festivo — o Prosecco foi feito para petiscos e conversas que não terminam. Uma taça puxa a outra com uma facilidade perigosa.",dicas:["Temperatura ideal: 6–8°C","Perfeito para happy hours","Combina com tudo e com todo mundo"]},
-  "Petiscos variados|Leve e suave":       {uva:"Vinho Verde",icon:"🌿",poem:"Fresco, leve e com uma borbulha natural quase imperceptível — o Vinho Verde é a pedida certa para petiscos despretensiosos e conversas que fluem.",dicas:["Temperatura ideal: 8–10°C","Sirva bem gelado","Perfeito para dias quentes"]},
-  "Sobremesas|Doce e frutado":            {uva:"Moscatel",icon:"🍯",poem:"Aromático e dourado, o Moscatel transforma qualquer sobremesa em ritual. Flores de laranjeira, mel e uma doçura que não enjoa — apenas encanta.",dicas:["Temperatura ideal: 6–8°C","Ideal com bolos de frutas e mel","Evite sobremesas muito doces"]},
-  "Sobremesas|Espumante":                 {uva:"Espumante Demi-Sec",icon:"🎂",poem:"Bolhas festivas e um toque adocicado que abraça bolos, tortas e chocolates com elegância. O espumante Demi-Sec é a sobremesa dentro da taça.",dicas:["Temperatura ideal: 6–8°C","Perfeito com bolo de aniversário","Harmoniza com frutas vermelhas"]},
-  "Vegetariano|Leve e suave":             {uva:"Grenache",icon:"🌱",poem:"Frutado, herbal e com uma leveza que respeita os sabores vegetais — o Grenache é o tinto que mais ama legumes. Floral, suave e surpreendentemente versátil.",dicas:["Temperatura ideal: 14–16°C","Combina com legumes grelhados","Perfeito com pimentões e berinjela"]},
-  "Vegetariano|Espumante":                {uva:"Cava Brut",icon:"🫧",poem:"Mineralidade e frescor que elevam qualquer prato vegetariano. O Cava Brut traz complexidade sem peso — a escolha ideal para quem valoriza leveza e sofisticação.",dicas:["Temperatura ideal: 7–9°C","Harmoniza com saladas elaboradas","Combina com queijos frescos e ervas"]},
-};
-
-// Fallbacks por preferência
-const fallbacks = {
-  "Leve e suave":    {uva:"Pinot Noir",icon:"🌹",poem:"Elegante e delicado, o Pinot Noir se adapta a qualquer momento com graça. Cereja, terra úmida e uma suavidade que conquista quem ainda está descobrindo o mundo do vinho.",dicas:["Temperatura ideal: 14–16°C","Versátil para diversas ocasiões","Um clássico que nunca decepciona"]},
-  "Encorpado e seco":{uva:"Cabernet Sauvignon",icon:"🍷",poem:"Estruturado e memorável, o Cabernet Sauvignon é o rei dos tintos encorpados. Uma escolha que nunca decepciona — apenas impressiona.",dicas:["Temperatura ideal: 16–18°C","Deixe respirar antes de servir","Um clássico para momentos especiais"]},
-  "Doce e frutado":  {uva:"Moscatel",icon:"🍯",poem:"Aromático e envolvente, o Moscatel é pura alegria na taça. Flores, frutas e uma doçura equilibrada que agrada do primeiro ao último gole.",dicas:["Temperatura ideal: 6–8°C","Sirva bem gelado","Perfeito para finalizar a noite"]},
-  "Espumante":       {uva:"Espumante Brut",icon:"✨",poem:"Bolhas que celebram qualquer momento — o espumante Brut é a resposta certa para toda ocasião. Fresco, elegante e inesquecível.",dicas:["Temperatura ideal: 6–8°C","Sirva sempre gelado","Toda ocasião merece um brinde"]},
-  "Surpreenda-me!":  {uva:"Syrah",icon:"🌶️",poem:"Ousado e perfumado, o Syrah é para quem não tem medo de se surpreender. Especiarias, frutas escuras e uma personalidade marcante que fica na memória.",dicas:["Temperatura ideal: 16–18°C","Ideal para aventureiros do vinho","Um vinho que conta histórias"]},
-};
-
-let answers={};
-let current=0;
-let answered=false;
-
-function buildProgress(c){
-  const bar=document.getElementById('progress');
-  bar.innerHTML='';
-  for(let i=0;i<questions.length;i++){
-    const d=document.createElement('div');
-    d.className='pd'+(i<c?' done':'');
-    bar.appendChild(d);
-  }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}`;
+}
+function fmtDateFull(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
-function showQuestion(index){
-  const q=questions[index];
-  document.getElementById('q-label').textContent=q.label;
-  document.getElementById('q-text').textContent=q.text;
-  const opts=document.getElementById('q-options');
-  opts.innerHTML='';
-
-  if(q.categories){
-    q.categories.forEach(cat=>{
-      const catLabel=document.createElement('div');
-      catLabel.className='cat-label';
-      catLabel.textContent=cat.label;
-      opts.appendChild(catLabel);
-      cat.options.forEach(o=>{
-        const btn=document.createElement('button');
-        btn.className='ob';
-        btn.textContent=o;
-        btn.onclick=()=>selectOption(o);
-        opts.appendChild(btn);
-      });
-    });
-  } else {
-    q.options.forEach(o=>{
-      const btn=document.createElement('button');
-      btn.className='ob';
-      btn.textContent=o;
-      btn.onclick=()=>selectOption(o);
-      opts.appendChild(btn);
-    });
-  }
-
-  document.getElementById('next-btn').disabled=true;
-  buildProgress(index);
-  answered=false;
-  window.scrollTo(0,0);
+function apiConfigured(){
+  return API_URL && API_URL.indexOf('COLE_AQUI') === -1;
 }
 
-function selectOption(val){
-  if(answered)return;
-  answered=true;
-  answers[current]=val;
-  document.querySelectorAll('.ob').forEach(b=>{
-    b.classList.toggle('selected', b.textContent===val);
+function normalizeState(){
+  state.events = state.events || [];
+  state.members = state.members || [];
+  state.founders = state.founders || [];
+  state.events.forEach(ev => {
+    ev.avulsas = ev.avulsas || [];
+    ev.finance = ev.finance || { revenue: 0, costs: {} };
+    ev.notes = ev.notes || { book: '', observations: '' };
   });
-  document.getElementById('next-btn').disabled=false;
-}
-
-function nextQuestion(){
-  current++;
-  if(current>=questions.length){
-    showScreen('lead');
-  } else {
-    showQuestion(current);
+  if(!state.founders || state.founders.length === 0){
+    state.founders = [
+      { id:'f1', name:'Fundadora 1' },
+      { id:'f2', name:'Fundadora 2' },
+      { id:'f3', name:'Fundadora 3' },
+      { id:'f4', name:'Fundadora 4' }
+    ];
   }
 }
 
-function getResult(){
-  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
-  const preferencia=(answers[2]||'').replace(/^[^\s]+ /,'');
-  const chave=comida+'|'+preferencia;
-  return harmonizacoes[chave] || fallbacks[preferencia] || fallbacks["Espumante"];
+async function loadState(){
+  if(!apiConfigured()){
+    showConfigBanner();
+    normalizeState();
+    renderAll();
+    return;
+  }
+  setSyncStatus('Carregando...');
+  try{
+    const res = await fetch(API_URL, { method:'GET' });
+    const text = await res.text();
+    if(text && text.trim()){
+      const parsed = JSON.parse(text);
+      if(parsed && (parsed.events || parsed.members || parsed.founders)){
+        state = parsed;
+      }
+    }
+    setSyncStatus('Atualizado agora');
+  }catch(e){
+    console.error('Erro ao carregar', e);
+    setSyncStatus('Não consegui carregar da planilha — verifique a URL do Apps Script', true);
+  }
+  normalizeState();
+  renderAll();
 }
 
-function submitLead(){
-  const nome=document.getElementById('f-nome').value.trim();
-  const whats=document.getElementById('f-whats').value.trim();
-  const result=getResult();
-  const body=new URLSearchParams();
-  body.append(FIELDS.nome,nome||'não informado');
-  body.append(FIELDS.whats,whats||'não informado');
-  body.append(FIELDS.resultado,result.uva);
-  fetch(FORM_URL,{method:'POST',body,mode:'no-cors'}).catch(()=>{});
-  showResult();
+async function saveState(){
+  if(!apiConfigured()) return;
+  setSyncStatus('Salvando...');
+  try{
+    await fetch(API_URL, {
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify(state)
+    });
+    setSyncStatus('Salvo');
+  }catch(e){
+    console.error('Erro ao salvar', e);
+    setSyncStatus('Erro ao salvar — tente novamente', true);
+  }
 }
 
-function showResult(){
-  const r=getResult();
-  const ocasiao=answers[0]||'';
-  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
-  const estacao=(answers[3]||'').replace(/^[^\s]+ /,'');
-  const ambiente=(answers[4]||'').replace(/^[^\s]+ /,'');
+function setSyncStatus(msg, isError){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--alert)' : 'var(--text-muted)';
+}
 
-  document.getElementById('res-icon').textContent=r.icon;
-  document.getElementById('res-grape').textContent=r.uva;
-  document.getElementById('res-poem').textContent=r.poem;
+function showConfigBanner(){
+  const el = document.getElementById('syncStatus');
+  if(el){
+    el.textContent = 'Ainda não conectado a uma planilha — veja a nota no topo do arquivo';
+    el.style.color = 'var(--alert)';
+  }
+}
 
-  const det=document.getElementById('res-details');
-  det.innerHTML=`
-    <div class="detail-row"><span class="detail-icon">🥂</span><div><div class="detail-label">Ocasião</div><div class="detail-text">${ocasiao}</div></div></div>
-    <div class="detail-row"><span class="detail-icon">🍽️</span><div><div class="detail-label">À mesa</div><div class="detail-text">${comida}</div></div></div>
-    <div class="detail-row"><span class="detail-icon">💡</span><div><div class="detail-label">Dicas</div><div class="detail-text">${r.dicas.join(' · ')}</div></div></div>
+function sortedEvents(){
+  return [...state.events].sort((a,b)=> a.date.localeCompare(b.date));
+}
+
+function remaining(member){
+  return member.packageSize - member.attendance.length;
+}
+
+function glassSVG(filled, isNext){
+  const fill = filled ? 'var(--wine)' : 'none';
+  const stroke = isNext && !filled ? 'var(--alert)' : (filled ? 'var(--wine)' : 'var(--line)');
+  return `<svg viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 1 H12 L10.2 9.5 C9.8 11.3 8.6 12.3 7 12.3 C5.4 12.3 4.2 11.3 3.8 9.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.1"/>
+    <line x1="7" y1="12.3" x2="7" y2="16.5" stroke="${stroke}" stroke-width="1.1"/>
+    <line x1="4" y1="17" x2="10" y2="17" stroke="${stroke}" stroke-width="1.1"/>
+  </svg>`;
+}
+
+function renderStats(){
+  const active = state.members.filter(m => remaining(m) > 0);
+  const finishing = active.filter(m => remaining(m) === 1);
+  document.getElementById('statActive').textContent = active.length;
+  document.getElementById('statFinishing').textContent = finishing.length;
+  document.getElementById('statEvents').textContent = state.events.length;
+}
+
+function renderAlerts(){
+  const box = document.getElementById('alertsList');
+  const finishing = state.members.filter(m => remaining(m) === 1);
+  const completed = state.members.filter(m => remaining(m) <= 0);
+  if(finishing.length === 0 && completed.length === 0){
+    box.innerHTML = '<div class="alert-empty">Nenhum pacote precisando de atenção agora.</div>';
+    return;
+  }
+  let html = '';
+  finishing.forEach(m => {
+    html += `<div class="alert-card">
+      <div class="msg"><strong>${m.name}</strong> está no último encontro do pacote de ${m.packageSize}.
+      <span class="tag">Aproveite o próximo encontro para oferecer renovação</span></div>
+    </div>`;
+  });
+  completed.forEach(m => {
+    html += `<div class="alert-card done">
+      <div class="msg"><strong>${m.name}</strong> concluiu o pacote de ${m.packageSize} encontros.
+      <span class="tag">Ainda não renovado</span></div>
+      <button class="btn-mini" onclick="openRenewModal('${m.id}')">Renovar</button>
+    </div>`;
+  });
+  box.innerHTML = html;
+}
+
+function renderEventsStrip(){
+  const strip = document.getElementById('eventsStrip');
+  const evs = sortedEvents();
+  let html = '';
+  evs.forEach(ev => {
+    const count = state.members.filter(m => m.attendance.includes(ev.id)).length + (ev.avulsas ? ev.avulsas.length : 0);
+    const cls = ev.id === activeEventId ? 'event-chip active' : 'event-chip';
+    html += `<div class="${cls}" onclick="selectEvent('${ev.id}')">${fmtDate(ev.date)}<span class="cnt">(${count})</span></div>`;
+  });
+  html += `<div class="event-chip new" onclick="openOverlay('overlayEvent')">+ Novo</div>`;
+  strip.innerHTML = html;
+  if(!activeEventId && evs.length){
+    activeEventId = evs[evs.length-1].id;
+  }
+}
+
+function renderAttPanel(){
+  const panel = document.getElementById('attPanel');
+  if(!activeEventId){
+    panel.innerHTML = '';
+    return;
+  }
+  const ev = state.events.find(e => e.id === activeEventId);
+  if(!ev){ panel.innerHTML = ''; return; }
+
+  const eligible = state.members.filter(m => {
+    const present = m.attendance.includes(ev.id);
+    return present || remaining(m) > 0;
+  });
+
+  let rows = '';
+  if(eligible.length === 0){
+    rows = '<div class="att-empty">Nenhuma sócia com pacote ativo ainda. Cadastre uma sócia abaixo.</div>';
+  } else {
+    eligible.sort((a,b)=> a.name.localeCompare(b.name)).forEach(m => {
+      const present = m.attendance.includes(ev.id);
+      const rem = remaining(m);
+      const info = present
+        ? `usou sessão ${m.attendance.indexOf(ev.id) >= 0 ? m.attendance.filter(id => sortedEvents().findIndex(e=>e.id===id) <= sortedEvents().findIndex(e=>e.id===ev.id)).length : ''} de ${m.packageSize}`
+        : `${rem} restante${rem===1?'':'s'} de ${m.packageSize}`;
+      rows += `<div class="att-row">
+        <div>
+          <div class="name">${m.name}</div>
+          <div class="info">${info}</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" ${present?'checked':''} onchange="toggleAttendance('${m.id}','${ev.id}')">
+          <span class="track"></span>
+        </label>
+      </div>`;
+    });
+  }
+
+  const avulsas = ev.avulsas || [];
+  let avulsaRows = '';
+  if(avulsas.length === 0){
+    avulsaRows = '<div class="avulsa-empty">Nenhuma participante avulsa neste encontro ainda.</div>';
+  } else {
+    avulsas.forEach(a => {
+      avulsaRows += `<div class="avulsa-row">
+        <div class="name">${a.name}</div>
+        <button class="icon-btn danger" onclick="removeAvulsa('${ev.id}','${a.id}')">remover</button>
+      </div>`;
+    });
+  }
+
+  const finance = ev.finance || { revenue:0, costs:{} };
+
+  const costItems = state.founders.map(f => `
+    <div class="cost-item">
+      <label>${f.name}</label>
+      <input type="number" placeholder="0,00" value="${finance.costs[f.id] || ''}" oninput="updateCost('${ev.id}','${f.id}', this.value)">
+    </div>`).join('');
+
+  const financeHtml = `<div class="finance-section">
+    <div class="finance-head">
+      <h4>Financeiro deste encontro</h4>
+      <button class="icon-btn" onclick="openFoundersModal()">editar nomes</button>
+    </div>
+    <div class="field">
+      <label>Valor total que entrou</label>
+      <input type="number" placeholder="0,00" value="${finance.revenue || ''}" oninput="updateRevenue('${ev.id}', this.value)">
+    </div>
+    <div class="cost-grid">${costItems}</div>
+    <div class="finance-summary" id="financeSummary-${ev.id}">
+      ${financeSummaryHtml(ev.id)}
+    </div>
+  </div>`;
+
+  const notes = ev.notes || { book:'', observations:'' };
+  const notesHtml = `<div class="notes-section">
+    <div class="field">
+      <label>Livro / tema do encontro</label>
+      <input type="text" id="bookInput-${ev.id}" value="${notes.book || ''}" placeholder="Ex: título do livro ou tema da atividade" oninput="updateNotesField('${ev.id}','book', this.value)">
+    </div>
+    <div class="field">
+      <label>Observações</label>
+      <textarea id="obsInput-${ev.id}" placeholder="Anotações livres sobre este encontro" oninput="updateNotesField('${ev.id}','observations', this.value)">${notes.observations || ''}</textarea>
+    </div>
+  </div>`;
+
+  panel.innerHTML = `<div class="att-panel">
+    <h3>Presenças — ${fmtDateFull(ev.date)}</h3>
+    <div class="sub">Marque quem esteve neste encontro. O número da sessão é contado automaticamente.</div>
+    ${notesHtml}
+    ${rows}
+    <div class="avulsas-section">
+      <h4>Participações avulsas</h4>
+      ${avulsaRows}
+      <div class="avulsa-add">
+        <input type="text" id="avulsaInput-${ev.id}" placeholder="Nome de quem comprou avulso">
+        <button class="btn secondary" onclick="addAvulsa('${ev.id}')">+ Adicionar</button>
+      </div>
+    </div>
+    ${financeHtml}
+    <div class="att-panel-actions">
+      <button class="icon-btn danger" onclick="deleteEvent('${ev.id}')">excluir este encontro</button>
+    </div>
+  </div>`;
+}
+
+function memberCard(m){
+  const rem = remaining(m);
+  const evs = sortedEvents();
+  let cls = 'card';
+  let statusText = `${rem} encontro${rem===1?'':'s'} restante${rem===1?'':'s'}`;
+  let statusCls = '';
+  if(rem === 1){ cls += ' finishing'; statusCls = 'finishing'; statusText = 'último encontro do pacote'; }
+  if(rem <= 0){ cls += ' completed'; statusCls = 'completed'; statusText = 'pacote concluído'; }
+
+  let glasses = '';
+  for(let i=0; i<m.packageSize; i++){
+    const filled = i < m.attendance.length;
+    const isNext = i === m.attendance.length;
+    glasses += glassSVG(filled, isNext);
+  }
+
+  return `<div class="${cls}">
+    <div class="name">${m.name}</div>
+    <div class="meta">pacote de ${m.packageSize} · comprado em ${fmtDateFull(m.purchaseDate)}</div>
+    <div class="glasses">${glasses}</div>
+    <div class="status ${statusCls}">${statusText}</div>
+    <div class="card-actions">
+      <button class="icon-btn" onclick="deleteMember('${m.id}')">remover</button>
+      ${rem<=0 ? `<button class="icon-btn" onclick="openRenewModal('${m.id}')">renovar</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderMembers(){
+  const active = state.members.filter(m => remaining(m) > 0).sort((a,b)=> remaining(a)-remaining(b) || a.name.localeCompare(b.name));
+  const finished = state.members.filter(m => remaining(m) <= 0).sort((a,b)=> b.purchaseDate.localeCompare(a.purchaseDate));
+
+  const grid = document.getElementById('activeGrid');
+  const empty = document.getElementById('emptyState');
+  if(active.length === 0){
+    grid.innerHTML = '';
+    empty.innerHTML = '<div class="empty-state">Nenhuma sócia com pacote ativo ainda. Clique em "+ Nova sócia" para cadastrar a primeira.</div>';
+  } else {
+    empty.innerHTML = '';
+    grid.innerHTML = active.map(memberCard).join('');
+  }
+
+  const historyWrap = document.getElementById('historyWrap');
+  const historySummary = document.getElementById('historySummary');
+  const historyGrid = document.getElementById('historyGrid');
+  if(finished.length === 0){
+    historyWrap.style.display = 'none';
+  } else {
+    historyWrap.style.display = 'block';
+    historySummary.textContent = `Pacotes concluídos (${finished.length})`;
+    historyGrid.innerHTML = finished.map(memberCard).join('');
+  }
+}
+
+function renderAll(){
+  renderStats();
+  renderAlerts();
+  renderEventsStrip();
+  renderAttPanel();
+  renderMembers();
+}
+
+function selectEvent(id){
+  activeEventId = id;
+  renderEventsStrip();
+  renderAttPanel();
+}
+
+async function toggleAttendance(memberId, eventId){
+  const m = state.members.find(x => x.id === memberId);
+  if(!m) return;
+  const idx = m.attendance.indexOf(eventId);
+  if(idx >= 0){
+    m.attendance.splice(idx,1);
+  } else {
+    m.attendance.push(eventId);
+  }
+  await saveState();
+  renderAll();
+}
+
+async function deleteMember(id){
+  if(!confirm('Remover esta sócia do controle de pacotes?')) return;
+  state.members = state.members.filter(m => m.id !== id);
+  await saveState();
+  renderAll();
+}
+
+async function addAvulsa(eventId){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return;
+  const input = document.getElementById(`avulsaInput-${eventId}`);
+  const name = input.value.trim();
+  if(!name){ input.focus(); return; }
+  ev.avulsas = ev.avulsas || [];
+  ev.avulsas.push({ id: uid(), name });
+  await saveState();
+  renderAll();
+}
+
+async function removeAvulsa(eventId, avulsaId){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return;
+  ev.avulsas = (ev.avulsas || []).filter(a => a.id !== avulsaId);
+  await saveState();
+  renderAll();
+}
+
+function financeSummaryHtml(eventId){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return '';
+  const finance = ev.finance || { revenue:0, costs:{} };
+  const totalCosts = state.founders.reduce((sum,f) => sum + (parseFloat(finance.costs[f.id]) || 0), 0);
+  const revenue = parseFloat(finance.revenue) || 0;
+  const lucro = revenue - totalCosts;
+  const sharePerFounder = lucro / (state.founders.length || 1);
+  const repasseLines = state.founders.map(f => {
+    const custo = parseFloat(finance.costs[f.id]) || 0;
+    const repasse = custo + sharePerFounder;
+    return `<div class="line">${f.name}<span>R$ ${repasse.toFixed(2)}</span></div>`;
+  }).join('');
+  return `
+    <div class="line">Custos totais<span>R$ ${totalCosts.toFixed(2)}</span></div>
+    <div class="line profit">Lucro a dividir<span>R$ ${lucro.toFixed(2)}</span></div>
+    <div class="repasse-list">${repasseLines}</div>
   `;
-  showScreen('result');
 }
 
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
+async function updateNotesField(eventId, field, value){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return;
+  ev.notes = ev.notes || { book:'', observations:'' };
+  ev.notes[field] = value;
+  await saveState();
 }
 
-function startQuiz(){showScreen('quiz');showQuestion(0);}
-function restart(){answers={};current=0;answered=false;showScreen('intro');}
-
-function wrapText(ctx,text,x,y,maxWidth,lineHeight){
-  const words=text.split(' ');
-  let line='',cy=y;
-  for(let n=0;n<words.length;n++){
-    const test=line+words[n]+' ';
-    if(ctx.measureText(test).width>maxWidth&&n>0){ctx.fillText(line,x,cy);line=words[n]+' ';cy+=lineHeight;}
-    else{line=test;}
-  }
-  ctx.fillText(line,x,cy);
-  return cy+lineHeight;
+async function updateRevenue(eventId, value){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return;
+  ev.finance = ev.finance || { revenue:0, costs:{} };
+  ev.finance.revenue = value;
+  await saveState();
+  const summary = document.getElementById(`financeSummary-${eventId}`);
+  if(summary) summary.innerHTML = financeSummaryHtml(eventId);
 }
 
-function roundRect(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+async function updateCost(eventId, founderId, value){
+  const ev = state.events.find(e => e.id === eventId);
+  if(!ev) return;
+  ev.finance = ev.finance || { revenue:0, costs:{} };
+  ev.finance.costs[founderId] = value;
+  await saveState();
+  const summary = document.getElementById(`financeSummary-${eventId}`);
+  if(summary) summary.innerHTML = financeSummaryHtml(eventId);
 }
 
-function downloadCard(){
-  const r=getResult();
-  const ocasiao=answers[0]||'';
-  const comida=(answers[1]||'').replace(/^[^\s]+ /,'');
-  const canvas=document.getElementById('card-canvas');
-  const W=1080,H=1920;
-  canvas.width=W;canvas.height=H;
-  const ctx=canvas.getContext('2d');
+function openFoundersModal(){
+  const wrap = document.getElementById('founderFields');
+  wrap.innerHTML = state.founders.map(f => `
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="founderName-${f.id}" value="${f.name}">
+    </div>`).join('');
+  openOverlay('overlayFounders');
+}
 
-  // fundo creme claro
-  ctx.fillStyle='#F5EDE8';
-  ctx.fillRect(0,0,W,H);
-
-  // barras topo e base
-  ctx.fillStyle='#7B4A2D';
-  ctx.fillRect(0,0,W,16);
-  ctx.fillRect(0,H-16,W,16);
-
-  // ornamentos laterais
-  ctx.fillStyle='#7B4A2D';
-  ctx.globalAlpha=.06;
-  ctx.fillRect(0,0,8,H);
-  ctx.fillRect(W-8,0,8,H);
-  ctx.globalAlpha=1;
-
-  // logo
-  ctx.fillStyle='#7B4A2D';
-  ctx.font='italic 52px Georgia,serif';
-  ctx.textAlign='center';
-  ctx.fillText('Bendita Taça',W/2,130);
-
-  // subtítulo
-  ctx.fillStyle='#b08070';
-  ctx.font='24px Arial,sans-serif';
-  ctx.fillText('harmonização',W/2,172);
-
-  // divisor
-  ctx.fillStyle='#7B4A2D';
-  ctx.globalAlpha=.3;
-  ctx.fillRect(W/2-40,196,80,1.5);
-  ctx.globalAlpha=1;
-
-  // ícone
-  ctx.font='120px serif';
-  ctx.fillText(r.icon,W/2,360);
-
-  // tag
-  ctx.fillStyle='#b08070';
-  ctx.font='22px Arial,sans-serif';
-  ctx.letterSpacing='4px';
-  ctx.fillText('SUA UVA IDEAL',W/2,418);
-  ctx.letterSpacing='0px';
-
-  // uva
-  ctx.fillStyle='#3D2314';
-  ctx.font='italic 88px Georgia,serif';
-  ctx.fillText(r.uva,W/2,528);
-
-  // divisor 2
-  ctx.fillStyle='#7B4A2D';
-  ctx.globalAlpha=.25;
-  ctx.fillRect(W/2-40,556,80,1.5);
-  ctx.globalAlpha=1;
-
-  // poema
-  ctx.fillStyle='#4a3728';
-  ctx.font='italic 32px Georgia,serif';
-  ctx.textAlign='left';
-  let y=614;
-  y=wrapText(ctx,r.poem,80,y,920,52);
-
-  // caixa detalhes
-  y+=30;
-  ctx.fillStyle='#EDE0D8';
-  roundRect(ctx,60,y,960,220,16);
-  ctx.fill();
-
-  ctx.fillStyle='#b08070';
-  ctx.font='20px Arial,sans-serif';
-  ctx.textAlign='left';
-  ctx.fillText('OCASIÃO',90,y+44);
-  ctx.fillStyle='#3D2314';
-  ctx.font='28px Georgia,serif';
-  wrapText(ctx,ocasiao,90,y+78,880,36);
-
-  ctx.fillStyle='#b08070';
-  ctx.font='20px Arial,sans-serif';
-  ctx.fillText('À MESA',90,y+136);
-  ctx.fillStyle='#3D2314';
-  ctx.font='28px Georgia,serif';
-  ctx.fillText(comida,90,y+170);
-
-  // dicas
-  y+=244;
-  ctx.fillStyle='#b08070';
-  ctx.font='20px Arial,sans-serif';
-  ctx.textAlign='left';
-  ctx.fillText('DICAS',80,y+10);
-  ctx.fillStyle='#4a3728';
-  ctx.font='26px Georgia,serif';
-  r.dicas.forEach((d,i)=>{
-    ctx.fillText('· '+d,80,y+46+(i*40));
+async function submitFounders(){
+  state.founders.forEach(f => {
+    const input = document.getElementById(`founderName-${f.id}`);
+    if(input && input.value.trim()) f.name = input.value.trim();
   });
-
-  // footer
-  y+=200;
-  ctx.fillStyle='#c0a898';
-  ctx.fillRect(60,H-160,960,1);
-  ctx.fillStyle='#9a7060';
-  ctx.font='28px Arial,sans-serif';
-  ctx.textAlign='center';
-  ctx.fillText('@bendita_taca',W/2,H-108);
-  ctx.fillStyle='#b08878';
-  ctx.font='22px Arial,sans-serif';
-  ctx.fillText('instagram.com/bendita_taca',W/2,H-68);
-
-  const link=document.createElement('a');
-  link.download='bendita-taca-harmonizacao.png';
-  link.href=canvas.toDataURL('image/png');
-  link.click();
+  closeOverlay('overlayFounders');
+  await saveState();
+  renderAttPanel();
 }
 
-function startQuiz(){showScreen('quiz');showQuestion(0);}
-function restart(){answers={};current=0;answered=false;showScreen('intro');}
+async function deleteEvent(id){
+  if(!confirm('Excluir este encontro? As presenças registradas nele serão perdidas.')) return;
+  state.events = state.events.filter(e => e.id !== id);
+  state.members.forEach(m => { m.attendance = m.attendance.filter(a => a !== id); });
+  if(activeEventId === id) activeEventId = null;
+  await saveState();
+  renderAll();
+}
+
+function openOverlay(id){
+  document.getElementById(id).classList.add('show');
+}
+function closeOverlay(id){
+  document.getElementById(id).classList.remove('show');
+}
+
+async function submitNewEvent(){
+  const dateInput = document.getElementById('newEventDate');
+  if(!dateInput.value){ dateInput.focus(); return; }
+  const ev = { id: uid(), date: dateInput.value, avulsas: [], finance: { revenue: 0, costs: {} }, notes: { book: '', observations: '' } };
+  state.events.push(ev);
+  activeEventId = ev.id;
+  dateInput.value = '';
+  closeOverlay('overlayEvent');
+  await saveState();
+  renderAll();
+}
+
+let renewingId = null;
+function openRenewModal(memberId){
+  renewingId = memberId;
+  const m = state.members.find(x => x.id === memberId);
+  document.getElementById('memberModalTitle').textContent = `Renovar pacote de ${m.name}`;
+  document.getElementById('newMemberName').value = m.name;
+  document.getElementById('newMemberName').disabled = true;
+  document.getElementById('newMemberDate').value = '';
+  openOverlay('overlayMember');
+}
+
+document.getElementById('btnAddMember').addEventListener('click', () => {
+  renewingId = null;
+  document.getElementById('memberModalTitle').textContent = 'Nova sócia';
+  document.getElementById('newMemberName').value = '';
+  document.getElementById('newMemberName').disabled = false;
+  document.getElementById('newMemberDate').value = '';
+  openOverlay('overlayMember');
+});
+
+async function submitNewMember(){
+  const name = document.getElementById('newMemberName').value.trim();
+  const date = document.getElementById('newMemberDate').value;
+  const pkg = parseInt(document.querySelector('input[name=pkg]:checked').value, 10);
+  if(!name || !date){
+    if(!name) document.getElementById('newMemberName').focus();
+    else document.getElementById('newMemberDate').focus();
+    return;
+  }
+  state.members.push({ id: uid(), name, purchaseDate: date, packageSize: pkg, attendance: [] });
+  closeOverlay('overlayMember');
+  await saveState();
+  renderAll();
+}
+
+document.querySelectorAll('.overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if(e.target === ov) ov.classList.remove('show'); });
+});
+
+loadState();
 </script>
 </body>
 </html>
